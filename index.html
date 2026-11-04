@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keuangan Pribadi</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 16px; background: #f9f9f9; color: #333; }
+        h1 { font-size: 1.5rem; text-align: center; }
+        .card { background: #fff; padding: 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        input, button { width: 100%; padding: 12px; margin-top: 8px; margin-bottom: 8px; box-sizing: border-box; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #0070f3; color: white; border: none; font-weight: bold; }
+        .list-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <h1>Keuangan Saya</h1>
+    <div class="card">
+        <h3>Total Saldo</h3>
+        <p id="total-saldo" style="font-size: 1.5rem; font-weight: bold;">Rp 0</p>
+    </div>
+    <div class="card">
+        <h3>Tambah Transaksi</h3>
+        <input type="text" id="keterangan" placeholder="Keterangan (cth: Gaji, Makan)">
+        <input type="number" id="jumlah" placeholder="Jumlah (cth: 50000)">
+        <button onclick="tambahTransaksi()">Simpan</button>
+    </div>
+    <div class="card">
+        <h3>Riwayat</h3>
+        <div id="riwayat-list"></div>
+    </div>
+
+    <script>
+        // Logika sederhana penyimpanan lokal
+        let transaksi = JSON.parse(localStorage.getItem('transaksi')) || [];
+
+        function updateTampilan() {
+            const listEl = document.getElementById('riwayat-list');
+            const saldoEl = document.getElementById('total-saldo');
+            listEl.innerHTML = '';
+            let total = 0;
+
+            transaksi.forEach((t, index) => {
+                total += Number(t.jumlah);
+                listEl.innerHTML += `<div class="list-item"><span>${t.keterangan}</span> <span>Rp ${Number(t.jumlah).toLocaleString('id-ID')}</span></div>`;
+            });
+
+            saldoEl.innerText = `Rp ${total.toLocaleString('id-ID')}`;
+            localStorage.setItem('transaksi', JSON.stringify(transaksi));
+        }
+
+        function tambahTransaksi() {
+            const ket = document.getElementById('keterangan').value;
+            const jml = document.getElementById('jumlah').value;
+            if(ket && jml) {
+                transaksi.push({ keterangan: ket, jumlah: jml });
+                document.getElementById('keterangan').value = '';
+                document.getElementById('jumlah').value = '';
+                updateTampilan();
+            }
+        }
+        updateTampilan();
+    </script>
+</body>
+</html>
