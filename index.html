@@ -47,9 +47,9 @@
 
     <!-- TOMBOL NAVIGASI UTAMA ATAS -->
     <div class="nav-container">
-        <button class="nav-btn active" onclick="switchPage('kas')">Uang Kas</button>
-        <button class="nav-btn" onclick="switchPage('famgath')">Famgath</button>
-        <button class="nav-btn" onclick="switchPage('master')">Master Page</button>
+        <button id="btn-kas" class="nav-btn active" onclick="switchPage('kas')">Uang Kas</button>
+        <button id="btn-famgath" class="nav-btn" onclick="switchPage('famgath')">Famgath</button>
+        <button id="btn-master" class="nav-btn" onclick="switchPage('master')">Master Page</button>
     </div>
 
     <!-- PAGE 1: LAPORAN UANG KAS -->
@@ -215,7 +215,7 @@
         let masterFam = JSON.parse(localStorage.getItem('masterFam')) || ["Mbah Tris", "Dinda", "Budi"];
         let dataKas = JSON.parse(localStorage.getItem('dataKas')) || [];
         let dataFamgath = JSON.parse(localStorage.getItem('dataFamgath')) || [];
-        let adminPIN = localStorage.getItem('adminPIN') || "1234";
+        let adminPIN = localStorage.getItem('adminPIN') || "1234"; // PIN Default awal: 1234
 
         const TARGET_KAS = 30000;
         const listBulan = ["Maret", "Juni", "September", "Desember"];
@@ -223,11 +223,20 @@
         document.getElementById('master-pin').value = adminPIN;
 
         function switchPage(pageName) {
+            // Jika ingin membuka Master Page, minta PIN terlebih dahulu
+            if (pageName === 'master') {
+                let inputPin = prompt("Masukkan Kode Akses (PIN Admin) untuk membuka Master Page:");
+                if (inputPin !== adminPIN) {
+                    alert("Kode akses salah! Anda tidak memiliki izin.");
+                    return; // Batalkan perpindahan halaman
+                }
+            }
+
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             
             document.getElementById('page-' + pageName).classList.add('active');
-            event.target.classList.add('active');
+            document.getElementById('btn-' + pageName).classList.add('active');
             renderAll();
         }
 
@@ -261,11 +270,9 @@
             }
         }
 
-        // FUNGSI EXPORT KE EXCEL (FORMAT .XLS)
         function exportKeExcel() {
             let htmlContent = "<html><head><meta charset='UTF-8'></head><body>";
             
-            // 1. Tabel Riwayat Kas
             htmlContent += "<h3>Laporan Riwayat Uang Kas</h3>";
             htmlContent += "<table border='1'><tr><th>Tanggal</th><th>Nama KK</th><th>Periode</th><th>Nominal</th></tr>";
             dataKas.forEach(item => {
@@ -273,7 +280,6 @@
             });
             htmlContent += "</table><br><br>";
 
-            // 2. Tabel Riwayat Famgath
             htmlContent += "<h3>Laporan Riwayat Tabungan Famgath</h3>";
             htmlContent += "<table border='1'><tr><th>Tanggal</th><th>Nama Anggota</th><th>Nominal</th></tr>";
             dataFamgath.forEach(item => {
@@ -283,7 +289,6 @@
 
             htmlContent += "</body></html>";
 
-            // Buat file virtual dan download otomatis ke HP/Laptop
             let blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel' });
             let url = URL.createObjectURL(blob);
             let a = document.createElement('a');
@@ -295,7 +300,6 @@
         }
 
         function renderAll() {
-            // Master KK & Dropdown Kas
             const masterKKBody = document.getElementById('master-kk-body');
             const kasSelect = document.getElementById('kas-nama-select');
             masterKKBody.innerHTML = '';
@@ -305,7 +309,6 @@
                 kasSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
             });
 
-            // Master Famgath & Dropdown Famgath
             const masterFamBody = document.getElementById('master-fam-body');
             const famSelect = document.getElementById('famgath-nama-select');
             masterFamBody.innerHTML = '';
@@ -315,7 +318,6 @@
                 famSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
             });
 
-            // Rekap Uang Kas Berdasarkan Tahun Filter
             let tahunDipilih = document.getElementById('filter-tahun-rekap').value;
             const kasRekapBody = document.getElementById('kas-rekap-body');
             kasRekapBody.innerHTML = '';
@@ -339,14 +341,12 @@
                 kasRekapBody.innerHTML += rowHtml;
             });
 
-            // Riwayat Uang Kas
             const kasRiwayatBody = document.getElementById('kas-riwayat-body');
             kasRiwayatBody.innerHTML = '';
             [...dataKas].reverse().forEach(item => {
                 kasRiwayatBody.innerHTML += `<tr><td>${item.tanggal}</td><td>${item.nama}</td><td>${item.periode} (${item.tahun})</td><td>${formatRupiah(item.nominal)}</td></tr>`;
             });
 
-            // Rekap Famgath
             const famgathRekapBody = document.getElementById('famgath-rekap-body');
             famgathRekapBody.innerHTML = '';
             masterFam.forEach(nama => {
@@ -354,21 +354,18 @@
                 famgathRekapBody.innerHTML += `<tr><td>${nama}</td><td><strong>${formatRupiah(total)}</strong></td></tr>`;
             });
 
-            // Riwayat Famgath
             const famgathRiwayatBody = document.getElementById('famgath-riwayat-body');
             famgathRiwayatBody.innerHTML = '';
             [...dataFamgath].reverse().forEach(item => {
                 famgathRiwayatBody.innerHTML += `<tr><td>${item.tanggal}</td><td>${item.nama}</td><td>${formatRupiah(item.nominal)}</td></tr>`;
             });
 
-            // Save to LocalStorage
             localStorage.setItem('masterKK', JSON.stringify(masterKK));
             localStorage.setItem('masterFam', JSON.stringify(masterFam));
             localStorage.setItem('dataKas', JSON.stringify(dataKas));
             localStorage.setItem('dataFamgath', JSON.stringify(dataFamgath));
         }
 
-        // AKSI MASTER DATA
         function tambahMasterKK() {
             const input = document.getElementById('master-kk-nama');
             if(input.value.trim()) { masterKK.push(input.value.trim()); input.value = ''; renderAll(); }
@@ -381,7 +378,6 @@
         }
         function hapusMasterFam(idx) { masterFam.splice(idx, 1); renderAll(); }
 
-        // AKSI INPUT TRANSAKSI DENGAN KODE AKSES
         function tambahKas() {
             if(!verifikasiAkses()) return;
 
@@ -407,7 +403,7 @@
             const nominal = Number(document.getElementById('famgath-nominal').value);
 
             if(nama && nominal > 0) {
-                dataFamgath.push({ tanggal:ገgetTanggalHariIni(), nama: nama, nominal: nominal });
+                dataFamgath.push({ tanggal: getTanggalHariIni(), nama: nama, nominal: nominal });
                 document.getElementById('famgath-nominal').value = '';
                 renderAll();
                 alert('Tabungan Famgath Berhasil Disimpan!');
@@ -416,7 +412,6 @@
             }
         }
 
-        // LOAD PERTAMA KALI
         renderAll();
     </script>
 </body>
