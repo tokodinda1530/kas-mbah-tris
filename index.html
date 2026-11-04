@@ -206,7 +206,6 @@
     </div>
 
     <script>
-        // API URL SHEETDB ANDA
         const SHEETDB_URL = "https://sheetdb.io/api/v1/tcdcmwcqlvola";
 
         let masterKK = JSON.parse(localStorage.getItem('masterKK')) || ["Bpk. Mbah Tris", "Bpk. Budi", "Bpk. Joko"];
@@ -221,16 +220,13 @@
 
         document.getElementById('master-pin').value = adminPIN;
 
-        // AMBIL DATA REAL-TIME DARI GOOGLE SHEETS VIA SHEETDB
         async function loadCloudData() {
             if (!SHEETDB_URL || SHEETDB_URL.includes("MASUKKAN_URL")) return;
 
             try {
-                // Ambil data dari sheet Kas
                 let resKas = await fetch(`${SHEETDB_URL}?sheet=Kas`);
                 dataKas = await resKas.json();
 
-                // Ambil data dari sheet Famgath
                 let resFam = await fetch(`${SHEETDB_URL}?sheet=Famgath`);
                 dataFamgath = await resFam.json();
 
@@ -314,7 +310,6 @@
         }
 
         function renderAll() {
-            // Render Master Tahun
             const masterTahunBody = document.getElementById('master-tahun-body');
             const kasTahunSelect = document.getElementById('kas-tahun-input');
             const filterTahunSelect = document.getElementById('filter-tahun-rekap');
@@ -334,7 +329,6 @@
                 filterTahunSelect.value = selectedFilter;
             }
 
-            // Master KK
             const masterKKBody = document.getElementById('master-kk-body');
             const kasSelect = document.getElementById('kas-nama-select');
             masterKKBody.innerHTML = '';
@@ -344,7 +338,6 @@
                 kasSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
             });
 
-            // Master Famgath
             const masterFamBody = document.getElementById('master-fam-body');
             const famSelect = document.getElementById('famgath-nama-select');
             masterFamBody.innerHTML = '';
@@ -354,17 +347,19 @@
                 famSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
             });
 
-            // Rekap Uang Kas
+            // REKAP KAS (Pencocokan nama dan tahun dibuat aman terhadap perbedaan huruf/spasi)
             let tahunDipilih = filterTahunSelect.value;
             const kasRekapBody = document.getElementById('kas-rekap-body');
             kasRekapBody.innerHTML = '';
 
-            masterKK.forEach(nama => {
-                let rowHtml = `<tr><td>${nama}</td>`;
+            masterKK.forEach(namaKK => {
+                let rowHtml = `<tr><td>${namaKK}</td>`;
                 listBulan.forEach(bulan => {
                     let totalBulan = dataKas
-                        .filter(k => k.nama === nama && k.periode === bulan && String(k.tahun) === String(tahunDipilih))
-                        .reduce((sum, item) => sum + Number(item.nominal), 0);
+                        .filter(k => String(k.nama).trim().toLowerCase() === String(namaKK).trim().toLowerCase() && 
+                                     String(k.periode).trim().toLowerCase() === String(bulan).trim().toLowerCase() && 
+                                     String(k.tahun).trim() === String(tahunDipilih).trim())
+                        .reduce((sum, item) => sum + Number(item.nominal || 0), 0);
 
                     if (totalBulan >= TARGET_KAS) {
                         rowHtml += `<td><span class="badge-lunas">Terbayar</span></td>`;
@@ -378,26 +373,26 @@
                 kasRekapBody.innerHTML += rowHtml;
             });
 
-            // Riwayat Kas
             const kasRiwayatBody = document.getElementById('kas-riwayat-body');
             kasRiwayatBody.innerHTML = '';
             [...dataKas].reverse().forEach(item => {
-                kasRiwayatBody.innerHTML += `<tr><td>${item.tanggal}</td><td>${item.nama}</td><td>${item.periode} (${item.tahun})</td><td>${formatRupiah(item.nominal)}</td></tr>`;
+                kasRiwayatBody.innerHTML += `<tr><td>${item.tanggal || '-'}</td><td>${item.nama || '-'}</td><td>${item.periode || ''} (${item.tahun || ''})</td><td>${formatRupiah(item.nominal || 0)}</td></tr>`;
             });
 
-            // Rekap Famgath
+            // REKAP FAMGATH (Akumulasi aman berdasarkan nama)
             const famgathRekapBody = document.getElementById('famgath-rekap-body');
             famgathRekapBody.innerHTML = '';
-            masterFam.forEach(nama => {
-                let total = dataFamgath.filter(f => f.nama === nama).reduce((sum, item) => sum + Number(item.nominal), 0);
-                famgathRekapBody.innerHTML += `<tr><td>${nama}</td><td><strong>${formatRupiah(total)}</strong></td></tr>`;
+            masterFam.forEach(namaFam => {
+                let total = dataFamgath
+                    .filter(f => String(f.nama).trim().toLowerCase() === String(namaFam).trim().toLowerCase())
+                    .reduce((sum, item) => sum + Number(item.nominal || 0), 0);
+                famgathRekapBody.innerHTML += `<tr><td>${namaFam}</td><td><strong>${formatRupiah(total)}</strong></td></tr>`;
             });
 
-            // Riwayat Famgath
             const famgathRiwayatBody = document.getElementById('famgath-riwayat-body');
             famgathRiwayatBody.innerHTML = '';
             [...dataFamgath].reverse().forEach(item => {
-                famgathRiwayatBody.innerHTML += `<tr><td>${item.tanggal}</td><td>${item.nama}</td><td>${formatRupiah(item.nominal)}</td></tr>`;
+                famgathRiwayatBody.innerHTML += `<tr><td>${item.tanggal || '-'}</td><td>${item.nama || '-'}</td><td>${formatRupiah(item.nominal || 0)}</td></tr>`;
             });
 
             localStorage.setItem('masterKK', JSON.stringify(masterKK));
@@ -405,7 +400,6 @@
             localStorage.setItem('masterTahun', JSON.stringify(masterTahun));
         }
 
-        // AKSI MASTER DATA
         function tambahMasterTahun() {
             const input = document.getElementById('master-tahun-input');
             let val = input.value.trim();
@@ -425,7 +419,6 @@
         }
         function hapusMasterFam(idx) { masterFam.splice(idx, 1); renderAll(); }
 
-        // SIMPAN KE GOOGLE SHEETS VIA SHEETDB
         async function tambahKas() {
             if(!verifikasiAkses()) return alert("Kode akses salah!");
 
@@ -437,21 +430,19 @@
             if(nama && nominal > 0 && tahun) {
                 let newRow = { tanggal: getTanggalHariIni(), nama: nama, periode: periode, tahun: tahun, nominal: nominal };
                 
-                // Simpan ke Cloud Google Sheets
                 try {
                     await fetch(`${SHEETDB_URL}?sheet=Kas`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ data: [newRow] })
                     });
+                    document.getElementById('kas-nominal').value = '';
+                    alert('Data Kas Berhasil Disimpan & Tersinkron!');
+                    loadCloudData(); // Muat ulang data terbaru dari cloud agar tabel langsung ter-update
                 } catch(e) {
                     console.error("Gagal menyimpan ke cloud", e);
+                    alert("Gagal menyimpan ke server cloud.");
                 }
-                
-                dataKas.push(newRow);
-                document.getElementById('kas-nominal').value = '';
-                renderAll();
-                alert('Data Kas Berhasil Disimpan & Tersinkron!');
             }
         }
 
@@ -464,21 +455,19 @@
             if(nama && nominal > 0) {
                 let newRow = { tanggal: getTanggalHariIni(), nama: nama, nominal: nominal };
 
-                // Simpan ke Cloud Google Sheets
                 try {
                     await fetch(`${SHEETDB_URL}?sheet=Famgath`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ data: [newRow] })
                     });
+                    document.getElementById('famgath-nominal').value = '';
+                    alert('Tabungan Famgath Berhasil Disimpan & Tersinkron!');
+                    loadCloudData(); // Muat ulang data terbaru dari cloud agar tabel langsung ter-update
                 } catch(e) {
                     console.error("Gagal menyimpan ke cloud", e);
+                    alert("Gagal menyimpan ke server cloud.");
                 }
-
-                dataFamgath.push(newRow);
-                document.getElementById('famgath-nominal').value = '';
-                renderAll();
-                alert('Tabungan Famgath Berhasil Disimpan & Tersinkron!');
             }
         }
 
