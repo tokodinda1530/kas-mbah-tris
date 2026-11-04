@@ -21,6 +21,7 @@
         label { font-size: 0.85rem; font-weight: 600; display: block; margin-top: 8px; margin-bottom: 4px; }
         input, select, button { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 0.95rem; margin-bottom: 8px; }
         .btn-submit { background-color: #198754; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 6px; }
+        .btn-export { background-color: #ffc107; color: #212529; border: none; font-weight: bold; cursor: pointer; margin-top: 6px; }
         .btn-delete { background-color: #dc3545; color: white; border: none; padding: 4px 8px; width: auto; font-size: 0.75rem; border-radius: 4px; }
 
         /* Tabel Responsif Mobile */
@@ -175,6 +176,12 @@
     <!-- PAGE 3: MASTER PAGE -->
     <div id="page-master" class="page">
         <div class="card">
+            <h2>Backup Data (Export ke Excel)</h2>
+            <p style="font-size: 0.85rem; color: #555; margin-bottom: 10px;">Unduh seluruh data keuangan (Kas & Famgath) ke dalam file berformat Excel (.xls).</p>
+            <button class="btn-export" onclick="exportKeExcel()">📥 Download / Export ke Excel</button>
+        </div>
+
+        <div class="card">
             <h2>Pengaturan Kode Akses (PIN Admin)</h2>
             <label>Kode Akses Saat Ini / Baru</label>
             <input type="password" id="master-pin" placeholder="Masukkan PIN angka/huruf">
@@ -208,7 +215,7 @@
         let masterFam = JSON.parse(localStorage.getItem('masterFam')) || ["Mbah Tris", "Dinda", "Budi"];
         let dataKas = JSON.parse(localStorage.getItem('dataKas')) || [];
         let dataFamgath = JSON.parse(localStorage.getItem('dataFamgath')) || [];
-        let adminPIN = localStorage.getItem('adminPIN') || "1234"; // Default PIN awal 1234
+        let adminPIN = localStorage.getItem('adminPIN') || "1234";
 
         const TARGET_KAS = 30000;
         const listBulan = ["Maret", "Juni", "September", "Desember"];
@@ -254,6 +261,39 @@
             }
         }
 
+        // FUNGSI EXPORT KE EXCEL (FORMAT .XLS)
+        function exportKeExcel() {
+            let htmlContent = "<html><head><meta charset='UTF-8'></head><body>";
+            
+            // 1. Tabel Riwayat Kas
+            htmlContent += "<h3>Laporan Riwayat Uang Kas</h3>";
+            htmlContent += "<table border='1'><tr><th>Tanggal</th><th>Nama KK</th><th>Periode</th><th>Nominal</th></tr>";
+            dataKas.forEach(item => {
+                htmlContent += `<tr><td>${item.tanggal}</td><td>${item.nama}</td><td>${item.periode} ${item.tahun}</td><td>${item.nominal}</td></tr>`;
+            });
+            htmlContent += "</table><br><br>";
+
+            // 2. Tabel Riwayat Famgath
+            htmlContent += "<h3>Laporan Riwayat Tabungan Famgath</h3>";
+            htmlContent += "<table border='1'><tr><th>Tanggal</th><th>Nama Anggota</th><th>Nominal</th></tr>";
+            dataFamgath.forEach(item => {
+                htmlContent += `<tr><td>${item.tanggal}</td><td>${item.nama}</td><td>${item.nominal}</td></tr>`;
+            });
+            htmlContent += "</table>";
+
+            htmlContent += "</body></html>";
+
+            // Buat file virtual dan download otomatis ke HP/Laptop
+            let blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = `Laporan-Keuangan-Keluarga-${getTanggalHariIni().replace(/\//g, '-')}.xls`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
         function renderAll() {
             // Master KK & Dropdown Kas
             const masterKKBody = document.getElementById('master-kk-body');
@@ -283,7 +323,6 @@
             masterKK.forEach(nama => {
                 let rowHtml = `<tr><td>${nama}</td>`;
                 listBulan.forEach(bulan => {
-                    // Filter total bayar berdasarkan nama, periode bulan, dan tahun
                     let totalBulan = dataKas
                         .filter(k => k.nama === nama && k.periode === bulan && String(k.tahun) === String(tahunDipilih))
                         .reduce((sum, item) => sum + item.nominal, 0);
@@ -368,7 +407,7 @@
             const nominal = Number(document.getElementById('famgath-nominal').value);
 
             if(nama && nominal > 0) {
-                dataFamgath.push({ tanggal: getTanggalHariIni(), nama: nama, nominal: nominal });
+                dataFamgath.push({ tanggal:ገgetTanggalHariIni(), nama: nama, nominal: nominal });
                 document.getElementById('famgath-nominal').value = '';
                 renderAll();
                 alert('Tabungan Famgath Berhasil Disimpan!');
