@@ -3,63 +3,290 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Keuangan Pribadi</title>
+    <title>Sistem Keuangan Keluarga</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 16px; background: #f9f9f9; color: #333; }
-        h1 { font-size: 1.5rem; text-align: center; }
-        .card { background: #fff; padding: 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        input, button { width: 100%; padding: 12px; margin-top: 8px; margin-bottom: 8px; box-sizing: border-box; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
-        button { background: #0070f3; color: white; border: none; font-weight: bold; }
-        .list-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { margin: 0; padding: 12px; background-color: #f4f6f9; color: #222; }
+        
+        /* Navigasi Atas */
+        .nav-container { display: flex; gap: 6px; margin-bottom: 16px; background: #fff; padding: 6px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .nav-btn { flex: 1; padding: 10px 4px; font-size: 0.85rem; font-weight: bold; border: none; background: #e9ecef; color: #495057; border-radius: 6px; cursor: pointer; text-align: center; }
+        .nav-btn.active { background: #0d6efd; color: white; }
+
+        /* Card Container */
+        .card { background: white; border-radius: 8px; padding: 14px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        h2 { font-size: 1.1rem; margin-top: 0; margin-bottom: 12px; color: #0d6efd; border-bottom: 2px solid #e9ecef; padding-bottom: 6px; }
+        
+        /* Form Element */
+        label { font-size: 0.85rem; font-weight: 600; display: block; margin-top: 8px; margin-bottom: 4px; }
+        input, select, button { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 0.95rem; margin-bottom: 8px; }
+        .btn-submit { background-color: #198754; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 6px; }
+        .btn-delete { background-color: #dc3545; color: white; border: none; padding: 4px 8px; width: auto; font-size: 0.75rem; border-radius: 4px; }
+
+        /* Tabel Responsif Mobile */
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.85rem; }
+        th, td { border: 1px solid #dee2e6; padding: 8px; text-align: left; }
+        th { background-color: #e9ecef; }
+        .badge-lunas { background-color: #198754; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+        .badge-cicil { background-color: #ffc107; color: #212529; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+        
+        /* Sembunyikan Page */
+        .page { display: none; }
+        .page.active { display: block; }
     </style>
 </head>
 <body>
-    <h1>Keuangan Saya</h1>
-    <div class="card">
-        <h3>Total Saldo</h3>
-        <p id="total-saldo" style="font-size: 1.5rem; font-weight: bold;">Rp 0</p>
+
+    <!-- TOMBOL NAVIGASI UTAMA ATAS -->
+    <div class="nav-container">
+        <button class="nav-btn active" onclick="switchPage('kas')">Laporan Uang Kas</button>
+        <button class="nav-btn" onclick="switchPage('famgath')">Laporan Famgath</button>
+        <button class="nav-btn" onclick="switchPage('master')">Master Page</button>
     </div>
-    <div class="card">
-        <h3>Tambah Transaksi</h3>
-        <input type="text" id="keterangan" placeholder="Keterangan (cth: Gaji, Makan)">
-        <input type="number" id="jumlah" placeholder="Jumlah (cth: 50000)">
-        <button onclick="tambahTransaksi()">Simpan</button>
+
+    <!-- PAGE 1: LAPORAN UANG KAS -->
+    <div id="page-kas" class="page active">
+        <div class="card">
+            <h2>Input Bayar Kas (Target: Rp 30.000 / 3 Bulan)</h2>
+            <label>Pilih Kepala Keluarga</label>
+            <select id="kas-nama-select"></select>
+            
+            <label>Nominal Pembayaran (Rp)</label>
+            <input type="number" id="kas-nominal" placeholder="Cth: 10000 atau 30000">
+            
+            <button class="btn-submit" onclick="tambahKas()">Simpan Pembayaran Kas</button>
+        </div>
+
+        <div class="card">
+            <h2>Status Pembayaran Kepala Keluarga</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama Kepala Keluarga</th>
+                            <th>Total Bayar</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kas-rekap-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Riwayat Pembayaran Kas Pertanggal</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Nama</th>
+                            <th>Nominal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kas-riwayat-body"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="card">
-        <h3>Riwayat</h3>
-        <div id="riwayat-list"></div>
+
+    <!-- PAGE 2: LAPORAN FAMGATH -->
+    <div id="page-famgath" class="page">
+        <div class="card">
+            <h2>Input Tabungan Famgath</h2>
+            <label>Pilih Anggota</label>
+            <select id="famgath-nama-select"></select>
+            
+            <label>Nominal Tabungan (Rp)</label>
+            <input type="number" id="famgath-nominal" placeholder="Cth: 20000">
+            
+            <button class="btn-submit" onclick="tambahFamgath()">Simpan Tabungan</button>
+        </div>
+
+        <div class="card">
+            <h2>Akumulasi Tabungan Per Orang</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nama Anggota</th>
+                            <th>Total Akumulasi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="famgath-rekap-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Riwayat Tabungan Pertanggal</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Nama</th>
+                            <th>Nominal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="famgath-riwayat-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 3: MASTER PAGE -->
+    <div id="page-master" class="page">
+        <div class="card">
+            <h2>Master Kepala Keluarga (Uang Kas)</h2>
+            <input type="text" id="master-kk-nama" placeholder="Nama Kepala Keluarga (Cth: Bpk. Budi)">
+            <button class="btn-submit" onclick="tambahMasterKK()">Tambah Kepala Keluarga</button>
+            <table style="margin-top: 12px;">
+                <thead><tr><th>Daftar Nama</th><th style="width: 50px;">Aksi</th></tr></thead>
+                <tbody id="master-kk-body"></tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Master Anggota Famgath</h2>
+            <input type="text" id="master-fam-nama" placeholder="Nama Anggota (Cth: Dinda)">
+            <button class="btn-submit" onclick="tambahMasterFam()">Tambah Anggota Famgath</button>
+            <table style="margin-top: 12px;">
+                <thead><tr><th>Daftar Nama</th><th style="width: 50px;">Aksi</th></tr></thead>
+                <tbody id="master-fam-body"></tbody>
+            </table>
+        </div>
     </div>
 
     <script>
-        // Logika sederhana penyimpanan lokal
-        let transaksi = JSON.parse(localStorage.getItem('transaksi')) || [];
+        // INIT DATA DARI LOCAL STORAGE
+        let masterKK = JSON.parse(localStorage.getItem('masterKK')) || ["Bpk. Mbah Tris", "Bpk. Budi", "Bpk. Joko"];
+        let masterFam = JSON.parse(localStorage.getItem('masterFam')) || ["Mbah Tris", "Dinda", "Budi"];
+        let dataKas = JSON.parse(localStorage.getItem('dataKas')) || [];
+        let dataFamgath = JSON.parse(localStorage.getItem('dataFamgath')) || [];
 
-        function updateTampilan() {
-            const listEl = document.getElementById('riwayat-list');
-            const saldoEl = document.getElementById('total-saldo');
-            listEl.innerHTML = '';
-            let total = 0;
+        const TARGET_KAS = 30000;
 
-            transaksi.forEach((t, index) => {
-                total += Number(t.jumlah);
-                listEl.innerHTML += `<div class="list-item"><span>${t.keterangan}</span> <span>Rp ${Number(t.jumlah).toLocaleString('id-ID')}</span></div>`;
+        // FUNGSI NAVIGASI PAGE
+        function switchPage(pageName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById('page-' + pageName).classList.add('active');
+            event.target.classList.add('active');
+            renderAll();
+        }
+
+        function formatRupiah(angka) {
+            return 'Rp ' + Number(angka).toLocaleString('id-ID');
+        }
+
+        function getTanggalHariIni() {
+            const d = new Date();
+            return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+        }
+
+        // RENDER / TAMPILKAN SEMUA DATA
+        function renderAll() {
+            // Master KK & Dropdown Kas
+            const masterKKBody = document.getElementById('master-kk-body');
+            const kasSelect = document.getElementById('kas-nama-select');
+            masterKKBody.innerHTML = '';
+            kasSelect.innerHTML = '';
+            masterKK.forEach((nama, idx) => {
+                masterKKBody.innerHTML += `<tr><td>${nama}</td><td><button class="btn-delete" onclick="hapusMasterKK(${idx})">Hapus</button></td></tr>`;
+                kasSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
             });
 
-            saldoEl.innerText = `Rp ${total.toLocaleString('id-ID')}`;
-            localStorage.setItem('transaksi', JSON.stringify(transaksi));
+            // Master Famgath & Dropdown Famgath
+            const masterFamBody = document.getElementById('master-fam-body');
+            const famSelect = document.getElementById('famgath-nama-select');
+            masterFamBody.innerHTML = '';
+            famSelect.innerHTML = '';
+            masterFam.forEach((nama, idx) => {
+                masterFamBody.innerHTML += `<tr><td>${nama}</td><td><button class="btn-delete" onclick="hapusMasterFam(${idx})">Hapus</button></td></tr>`;
+                famSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
+            });
+
+            // Rekap Uang Kas
+            const kasRekapBody = document.getElementById('kas-rekap-body');
+            kasRekapBody.innerHTML = '';
+            masterKK.forEach(nama => {
+                let total = dataKas.filter(k => k.nama === nama).reduce((sum, item) => sum + item.nominal, 0);
+                let statusBadge = total >= TARGET_KAS 
+                    ? `<span class="badge-lunas">LUNAS</span>` 
+                    : `<span class="badge-cicil">Cicil (${formatRupiah(TARGET_KAS - total)})</span>`;
+                kasRekapBody.innerHTML += `<tr><td>${nama}</td><td>${formatRupiah(total)}</td><td>${statusBadge}</td></tr>`;
+            });
+
+            // Riwayat Uang Kas
+            const kasRiwayatBody = document.getElementById('kas-riwayat-body');
+            kasRiwayatBody.innerHTML = '';
+            [...dataKas].reverse().forEach(item => {
+                kasRiwayatBody.innerHTML += `<tr><td>${item.tanggal}</td><td>${item.nama}</td><td>${formatRupiah(item.nominal)}</td></tr>`;
+            });
+
+            // Rekap Famgath
+            const famgathRekapBody = document.getElementById('famgath-rekap-body');
+            famgathRekapBody.innerHTML = '';
+            masterFam.forEach(nama => {
+                let total = dataFamgath.filter(f => f.nama === nama).reduce((sum, item) => sum + item.nominal, 0);
+                famgathRekapBody.innerHTML += `<tr><td>${nama}</td><td><strong>${formatRupiah(total)}</strong></td></tr>`;
+            });
+
+            // Riwayat Famgath
+            const famgathRiwayatBody = document.getElementById('famgath-riwayat-body');
+            famgathRiwayatBody.innerHTML = '';
+            [...dataFamgath].reverse().forEach(item => {
+                famgathRiwayatBody.innerHTML += `<tr><td>${item.tanggal}</td><td>${item.nama}</td><td>${formatRupiah(item.nominal)}</td></tr>`;
+            });
+
+            // Save to LocalStorage
+            localStorage.setItem('masterKK', JSON.stringify(masterKK));
+            localStorage.setItem('masterFam', JSON.stringify(masterFam));
+            localStorage.setItem('dataKas', JSON.stringify(dataKas));
+            localStorage.setItem('dataFamgath', JSON.stringify(dataFamgath));
         }
 
-        function tambahTransaksi() {
-            const ket = document.getElementById('keterangan').value;
-            const jml = document.getElementById('jumlah').value;
-            if(ket && jml) {
-                transaksi.push({ keterangan: ket, jumlah: jml });
-                document.getElementById('keterangan').value = '';
-                document.getElementById('jumlah').value = '';
-                updateTampilan();
+        // AKSI MASTER DATA
+        function tambahMasterKK() {
+            const input = document.getElementById('master-kk-nama');
+            if(input.value.trim()) { masterKK.push(input.value.trim()); input.value = ''; renderAll(); }
+        }
+        function hapusMasterKK(idx) { masterKK.splice(idx, 1); renderAll(); }
+
+        function tambahMasterFam() {
+            const input = document.getElementById('master-fam-nama');
+            if(input.value.trim()) { masterFam.push(input.value.trim()); input.value = ''; renderAll(); }
+        }
+        function hapusMasterFam(idx) { masterFam.splice(idx, 1); renderAll(); }
+
+        // AKSI INPUT TRANSAKSI
+        function tambahKas() {
+            const nama = document.getElementById('kas-nama-select').value;
+            const nominal = Number(document.getElementById('kas-nominal').value);
+            if(nama && nominal > 0) {
+                dataKas.push({ tanggal: getTanggalHariIni(), nama: nama, nominal: nominal });
+                document.getElementById('kas-nominal').value = '';
+                renderAll();
+                alert('Data Kas Berhasil Disimpan!');
             }
         }
-        updateTampilan();
+
+        function tambahFamgath() {
+            const nama = document.getElementById('famgath-nama-select').value;
+            const nominal = Number(document.getElementById('famgath-nominal').value);
+            if(nama && nominal > 0) {
+                dataFamgath.push({ tanggal: getTanggalHariIni(), nama: nama, nominal: nominal });
+                document.getElementById('famgath-nominal').value = '';
+                renderAll();
+                alert('Tabungan Famgath Berhasil Disimpan!');
+            }
+        }
+
+        // LOAD PERTAMA KALI
+        renderAll();
     </script>
 </body>
 </html>
